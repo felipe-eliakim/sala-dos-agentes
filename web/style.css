@@ -45,8 +45,9 @@ h1 { margin: 2px 0 0; font-size: 28px; letter-spacing: -.02em; }
 .zoom button[aria-pressed="true"] { background: #ffd166; color: #1d1a2b; }
 .hint { margin: 0; padding: 8px 14px; font-size: 13px; color: var(--muted); }
 
-.side { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; height: min(calc(74vh + 90px), 950px); min-height: 640px; min-height: 460px; position: sticky; top: 12px; }
-@media (max-width: 1100px) { .side { position: static; height: 70vh; } }
+/* a lateral cabe sempre na tela: a caixa de digitar nunca fica escondida embaixo */
+.side { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; height: calc(100dvh - 100px); max-height: 980px; min-height: 420px; position: sticky; top: 12px; overflow: hidden; }
+@media (max-width: 1100px) { .side { position: static; height: 85dvh; } }
 .tabs { display: flex; border-bottom: 1px solid var(--line); }
 .tabs button { flex: 1; background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px; cursor: pointer; font-weight: 600; color: var(--muted); }
 .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--me); }
@@ -72,7 +73,10 @@ h1 { margin: 2px 0 0; font-size: 28px; letter-spacing: -.02em; }
 .perm button, .chat-form button, .note button { border: 0; border-radius: 8px; padding: 7px 14px; font-weight: 700; cursor: pointer; }
 .allow { background: var(--working); color: #fff; } .deny { background: var(--soft); border: 1px solid var(--line) !important; }
 .chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; position: relative; }
-.chat-form textarea { resize: none; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--soft); }
+.chat-form textarea { resize: none; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--soft); min-height: 42px; max-height: 40dvh; overflow-y: auto; line-height: 1.45; }
+.chat-form { align-items: end; flex: none; }
+.chat-form button { height: 42px; }
+.chat-log { min-height: 80px; }
 .chat-form button { background: var(--me); color: #fff; }
 .chat-form button:disabled, .chat-form textarea:disabled { opacity: .5; cursor: not-allowed; }
 

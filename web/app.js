@@ -317,11 +317,23 @@ $("#chat-form").addEventListener("submit", async (e) => {
   const text = $("#chat-input").value.trim();
   if (!text || !chatSid) return;
   $("#chat-input").value = "";
+  fitInput();
   const res = await POST("/api/chat", { sid: chatSid, text, agentes: mentions.found(text) });
   if (res.ok) { office.userTalking = Date.now() / 1000; chatActivity[chatSid] = Date.now() / 1000; }
   loadChat();
   const log = $("#chat-log"); log.scrollTop = log.scrollHeight;
 });
+// A caixa cresce com o texto (até ~10 linhas / 40% da tela) em vez de obrigar a rolar dentro dela.
+function fitInput() {
+  const el = $("#chat-input");
+  el.style.height = "auto";
+  const max = Math.min(window.innerHeight * 0.4, 260);
+  el.style.height = Math.min(el.scrollHeight + 2, max) + "px";
+  el.style.overflowY = el.scrollHeight + 2 > max ? "auto" : "hidden";
+}
+$("#chat-input").addEventListener("input", fitInput);
+addEventListener("resize", fitInput);
+
 $("#chat-input").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#chat-form").requestSubmit(); }
 });

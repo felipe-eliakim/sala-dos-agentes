@@ -60,6 +60,7 @@ export class Mentions {
     this.input.value = v.slice(0, this.range[0]) + tag + v.slice(this.range[1]);
     const caret = this.range[0] + tag.length;
     this.input.setSelectionRange(caret, caret);
+    this.input.dispatchEvent(new Event("input", { bubbles: true }));   // reajusta a altura da caixa
     this.input.focus();
     this.close();
   }
