@@ -59,14 +59,22 @@ class Chat:
 
     # ---------- lado da página ----------
 
-    def send(self, sid, text):
+    def send(self, sid, text, agentes=None):
+        """Mensagem da sua sala. agentes: [(tipo, nome)] chamados com @nome."""
         text = str(text).strip()[:8000]
         if not text:
             return None
         item = {"id": uuid.uuid4().hex[:10], "t": time.time(), "de": "voce", "texto": text, "entregue": False}
+        delivery = text
+        if agentes:
+            item["agentes"] = [n for _, n in agentes]
+            lista = "; ".join(f'{n} = subagent_type "{t}"' for t, n in agentes)
+            delivery += (f"\n\n[Sala dos Agentes] O usuário chamou pelo nome: {lista}. "
+                         "Delegue esta tarefa a esse(s) agente(s) com a ferramenta Agent, "
+                         "usando exatamente esse subagent_type, e responda aqui com o resultado.")
         with self.cond:
             self._append(sid, item)
-            self.inbox.setdefault(sid, []).append({"tipo": "msg", "id": item["id"], "texto": text})
+            self.inbox.setdefault(sid, []).append({"tipo": "msg", "id": item["id"], "texto": delivery})
             self.cond.notify_all()
         return item
 

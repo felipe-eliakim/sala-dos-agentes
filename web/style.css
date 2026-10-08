@@ -71,7 +71,7 @@ h1 { margin: 2px 0 0; font-size: 28px; letter-spacing: -.02em; }
 .perm .actions { display: flex; gap: 8px; }
 .perm button, .chat-form button, .note button { border: 0; border-radius: 8px; padding: 7px 14px; font-weight: 700; cursor: pointer; }
 .allow { background: var(--working); color: #fff; } .deny { background: var(--soft); border: 1px solid var(--line) !important; }
-.chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; position: relative; }
 .chat-form textarea { resize: none; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--soft); }
 .chat-form button { background: var(--me); color: #fff; }
 .chat-form button:disabled, .chat-form textarea:disabled { opacity: .5; cursor: not-allowed; }
@@ -195,3 +195,13 @@ dialog.hire h2 { margin: 0; font-size: 18px; } dialog.hire header button { backg
 .hire-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .hire-actions button { border: 0; border-radius: 8px; padding: 8px 16px; font-weight: 700; cursor: pointer; background: #e07bb0; color: #2a0f1e; }
 .hire-actions button.ghost { background: var(--soft); color: var(--ink); border: 1px solid var(--line); }
+
+/* @nome */
+.mentions { position: absolute; left: 0; bottom: calc(100% + 6px); width: min(320px, 100%); list-style: none; margin: 0; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(0,0,0,.3); z-index: 5; }
+.mentions li { display: grid; grid-template-columns: 10px auto 1fr; gap: 8px; align-items: baseline; padding: 5px 8px; border-radius: 7px; cursor: pointer; font-size: 13px; }
+.mentions li[aria-selected="true"] { background: var(--soft); }
+.mentions i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+.mentions span { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mention { background: rgba(255,255,255,.22); border-radius: 5px; padding: 0 3px; font-weight: 700; }
+.msg.claude .mention { background: var(--line); }

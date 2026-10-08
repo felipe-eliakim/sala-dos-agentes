@@ -13,6 +13,7 @@ from config import HOST, PORT, WEB_DIR, DATA_DIR
 from store import Store
 from chat import Chat
 import board
+import roster
 import projects
 import hiring
 import teams
@@ -116,7 +117,11 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.from_page():
             return self.json_out({"erro": "origem"}, 403)
         if path == "/api/chat":
-            item = chat.send(str(data.get("sid") or ""), data.get("text", ""))
+            # @nome: só vale agente que existe na equipe (embutido ou contratado)
+            known = {d["type"]: d["funcionario"] for d in roster.departments()}
+            pedidos = data.get("agentes") if isinstance(data.get("agentes"), list) else []
+            agentes = [(a, known[a]) for a in dict.fromkeys(str(x) for x in pedidos[:5]) if a in known]
+            item = chat.send(str(data.get("sid") or ""), data.get("text", ""), agentes)
             return self.json_out(item or {"erro": "vazio"}, 200 if item else 400)
         if path == "/api/permissao":
             ok = chat.answer_permission(str(data.get("request_id", "")), data.get("behavior") == "allow")

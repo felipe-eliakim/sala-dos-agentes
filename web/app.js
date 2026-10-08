@@ -5,6 +5,7 @@ import { toolInfo, STATE_TEXT } from "./tools.js";
 import { drawPerson, looks } from "./people.js";
 import { Secretary } from "./secretary.js";
 import { openHire } from "./hire.js";
+import { Mentions } from "./mention.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -292,7 +293,10 @@ function renderChat() {
                : `<small>${esc(m.resposta || "respondido no terminal")}</small>`}</li>`;
     }
     const tick = m.de === "voce" ? (m.entregue ? " · ✓ entregue" : " · enviando…") : "";
-    return `<li class="msg ${esc(m.de)}">${m.de === "sistema" ? esc(m.texto) : md(m.texto)}<span class="meta">${hora}${tick}</span></li>`;
+    let body = m.de === "sistema" ? esc(m.texto) : md(m.texto);
+    if (m.de === "voce") body = body.replace(/(^|\s|>)@([\p{L}\d-]+)/gu, '$1<span class="mention">@$2</span>');
+    const chamou = m.agentes?.length ? ` · chamou ${m.agentes.map(esc).join(", ")}` : "";
+    return `<li class="msg ${esc(m.de)}">${body}<span class="meta">${hora}${chamou}${tick}</span></li>`;
   }).join("");
   if (atBottom) log.scrollTop = log.scrollHeight;
 }
@@ -306,12 +310,14 @@ $("#chat-log").addEventListener("click", async (e) => {
   loadChat();
 });
 
+const mentions = new Mentions($("#chat-input"), () => data?.departments || []);
+
 $("#chat-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const text = $("#chat-input").value.trim();
   if (!text || !chatSid) return;
   $("#chat-input").value = "";
-  const res = await POST("/api/chat", { sid: chatSid, text });
+  const res = await POST("/api/chat", { sid: chatSid, text, agentes: mentions.found(text) });
   if (res.ok) { office.userTalking = Date.now() / 1000; chatActivity[chatSid] = Date.now() / 1000; }
   loadChat();
   const log = $("#chat-log"); log.scrollTop = log.scrollHeight;
