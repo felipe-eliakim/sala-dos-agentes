@@ -15,6 +15,7 @@
     </div>
     <div class="top-right">
       <div id="summary" class="summary" aria-live="polite"></div>
+      <button id="open-hire" class="board-btn" type="button">🤝 Contratar</button>
       <button id="open-board" class="board-btn" type="button">📌 Quadro de avisos <span id="board-count" class="badge" hidden></span></button>
     </div>
   </header>
@@ -36,6 +37,19 @@
     </section>
 
     <aside class="side">
+      <section id="lia" class="lia" aria-live="polite" aria-label="Lia, sua secretária">
+        <canvas width="48" height="84" aria-hidden="true"></canvas>
+        <div class="lia-body">
+          <div class="lia-head"><b>Lia</b> <span>sua secretária</span><button type="button" id="lia-cfg" aria-label="Ajustes da secretária" title="Ajustes">⚙️</button></div>
+          <p id="lia-text"></p>
+          <div class="lia-actions" id="lia-actions"></div>
+          <form id="lia-settings" class="lia-settings" hidden>
+            <label>Lembretes <select name="lembretesMin"><option value="30">a cada 30 min</option><option value="60">a cada 1 h</option><option value="120">a cada 2 h</option><option value="240">a cada 4 h</option><option value="0">desligados</option></select></label>
+            <label><input type="checkbox" name="som"> som nos avisos urgentes</label>
+            <label><input type="checkbox" name="notificar"> notificação do sistema quando a aba estiver em segundo plano</label>
+          </form>
+        </div>
+      </section>
       <div class="tabs" role="tablist">
         <button role="tab" id="tab-chat" aria-selected="true" aria-controls="panel-chat">💬 Sua sala</button>
         <button role="tab" id="tab-team" aria-selected="false" aria-controls="panel-team">👥 Equipe</button>
@@ -43,9 +57,15 @@
       </div>
 
       <section id="panel-chat" class="panel" role="tabpanel" aria-labelledby="tab-chat">
-        <label class="field">Falar com
-          <select id="chat-session"></select>
-        </label>
+        <div class="teams-bar">
+          <div id="team-tabs" class="team-tabs" role="tablist" aria-label="Equipes"></div>
+          <button type="button" id="new-team" class="new-team" title="Abrir uma equipe nova num projeto">+ Nova equipe</button>
+        </div>
+        <form id="new-team-form" class="new-team-form" hidden>
+          <label>Projeto <select name="dir"></select></label>
+          <label>Primeiro pedido <small>(opcional: vai assim que a equipe chegar)</small><textarea name="texto" rows="2"></textarea></label>
+          <div class="nt-actions"><button type="button" id="nt-cancel" class="ghost">Cancelar</button><button type="submit">Abrir equipe</button></div>
+        </form>
         <div id="chat-off" class="chat-off" hidden></div>
         <ol id="chat-log" class="chat-log" aria-live="polite"></ol>
         <form id="chat-form" class="chat-form">
@@ -65,6 +85,42 @@
       </section>
     </aside>
   </div>
+
+  <dialog id="hire" class="hire">
+    <header><h2>🤝 RH — contratar agente</h2><button type="button" id="close-hire" aria-label="Fechar">✕</button></header>
+    <div class="hire-body">
+      <section class="hire-list">
+        <p class="rita">Oi, eu sou a <b>Rita</b>, do RH. Quem eu contrato vira um agente de verdade do Claude Code (um arquivo em <code>~/.claude/agents/</code>) e ganha mesa no escritório. O Claude chama cada um quando a tarefa combina com o que ele faz. Contratações valem para as sessões abertas depois.</p>
+        <h3>Equipe contratada</h3>
+        <ul id="hired"></ul>
+        <h3>Modelos prontos</h3>
+        <div id="templates" class="templates"></div>
+      </section>
+      <form id="hire-form" class="hire-form">
+        <h3 id="hire-title">Nova contratação</h3>
+        <div class="row2">
+          <label>Nome do funcionário<input name="nome" maxlength="24" required placeholder="ex.: Rex"></label>
+          <label>Departamento<input name="departamento" maxlength="40" required placeholder="ex.: Revisão de código"></label>
+        </div>
+        <label>Identificador <small>(letras minúsculas, números e hífen)</small><input name="id" maxlength="41" required pattern="[a-z0-9][a-z0-9-]{1,40}" placeholder="ex.: revisor-de-codigo"></label>
+        <label>O que ele faz e quando chamar <small>(é por isso que o Claude decide chamá-lo)</small><textarea name="descricao" rows="3" required placeholder="ex.: Revisa mudanças de código procurando bugs. Use depois de terminar uma funcionalidade, antes do commit."></textarea></label>
+        <label>Como ele deve trabalhar <small>(instruções)</small><textarea name="instrucoes" rows="7" required placeholder="Passo a passo, padrões a seguir, formato da resposta…"></textarea></label>
+        <fieldset><legend>Pode…</legend>
+          <label><input type="checkbox" name="perm" value="ler" checked disabled> ler arquivos</label>
+          <label><input type="checkbox" name="perm" value="web"> pesquisar na web</label>
+          <label><input type="checkbox" name="perm" value="editar"> editar arquivos</label>
+          <label><input type="checkbox" name="perm" value="terminal"> usar o terminal</label>
+          <label><input type="checkbox" name="perm" value="tudo"> tudo (inclusive conectores)</label>
+        </fieldset>
+        <div class="row2">
+          <label>Modelo<select name="modelo"><option value="inherit">igual ao da sessão</option><option value="haiku">rápido e barato (Haiku)</option><option value="sonnet">equilibrado (Sonnet)</option><option value="opus">mais capaz (Opus)</option></select></label>
+          <label>Cor<select name="cor"><option value="blue">azul</option><option value="green">verde</option><option value="purple">roxo</option><option value="orange">laranja</option><option value="red">vermelho</option><option value="pink">rosa</option><option value="yellow">amarelo</option><option value="cyan">ciano</option></select></label>
+        </div>
+        <p id="hire-msg" class="hire-msg" role="status"></p>
+        <div class="hire-actions"><button type="button" id="hire-new" class="ghost">Limpar</button><button type="submit">Contratar</button></div>
+      </form>
+    </div>
+  </dialog>
 
   <dialog id="board" class="board">
     <header><h2>📌 Quadro de avisos</h2><button type="button" id="close-board" aria-label="Fechar">✕</button></header>

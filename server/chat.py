@@ -91,6 +91,14 @@ class Chat:
         with self.cond:
             return {sid for sid, t in self.seen.items() if now - t < ONLINE_SECONDS}
 
+    def last_reply(self, sid):
+        """Quando chegou a última resposta do Claude nessa conversa (0 = nunca)."""
+        with self.cond:
+            for m in reversed(self._load(sid)):
+                if m.get("de") == "claude" or m.get("perm"):
+                    return m["t"]
+        return 0
+
     def pending_perms(self):
         with self.cond:
             return [dict(p, request_id=k) for k, p in self.perms.items()]

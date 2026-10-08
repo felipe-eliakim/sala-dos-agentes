@@ -96,6 +96,7 @@ class Store:
         online = chat.online(now) if chat else set()
         for s in visible:
             s["canal"] = s["id"] in online
+            s["ultima_resposta"] = chat.last_reply(s["id"]) if chat else 0
         return {"now": now, "hooks": any(self.data_dir.glob("events-*.jsonl")),
                 "sessions": visible, "departments": roster.departments(),
                 "board": {"concluidas": feed[:30], "recados": board.notes()[::-1],

@@ -3,7 +3,7 @@
 // imagem à parte em escala 4 (pixel art nítida); a câmera mostra um pedaço
 // dela com zoom, e nomes/balões são desenhados por cima em tamanho fixo.
 import { TILE, PAL, drawStool, drawFloor, drawWallFace, drawWindow, drawClock, drawPoster, drawDoorway, drawDesk, drawChair,
-         drawPlant, drawShelf, drawTable, drawFridge, drawCounter, drawBoard, drawUserDesk, drawSofa, drawRug, drawCooler, rect } from "./sprites.js";
+         drawPlant, drawShelf, drawTable, drawFridge, drawCounter, drawBoard, drawUserDesk, drawSofa, drawRug, drawCooler, drawReception, rect } from "./sprites.js";
 import { drawPerson, looks } from "./people.js";
 import { toolInfo } from "./tools.js";
 import { Camera } from "./camera.js";
@@ -19,7 +19,8 @@ const ACC = { Explore: "oculos", Plan: "prancheta", "claude-code-guide": "fone",
 // ---------- planta ----------
 
 function buildLayout(departments) {
-  const depts = departments.map((d) => ({ kind: "dept", type: d.type, nome: d.nome, cor: d.cor || "#7a8699", w: W_DEPT }));
+  const depts = [{ kind: "rh", nome: "RH", cor: "#e07bb0", w: W_DEPT },
+    ...departments.map((d) => ({ kind: "dept", type: d.type, nome: d.nome, cor: d.cor || "#7a8699", w: W_DEPT }))];
   const rowW = (r) => r.reduce((a, x) => a + x.w + 1, 1);
   let split = 0, diff = Infinity;
   for (let a = 0; a <= depts.length; a++) {
@@ -88,9 +89,25 @@ function buildLayout(departments) {
       furniture.push({ z: (r.y + 4) * TILE, kind: "plant", x: r.x + r.w - 1, y: r.y + 3 });
       block(r.x + r.w - 4, r.y + 7, 3);
       furniture.push({ z: (r.y + 8) * TILE, kind: "sofa", x: r.x + r.w - 4, y: r.y + 7, w: 3 });
+      // mesa da Lia, colada na sua: ela fica sempre do seu lado
+      block(r.x + 8, r.y + 4, 3);
+      furniture.push({ z: (r.y + 5) * TILE, kind: "reception", x: r.x + 8, y: r.y + 4 });
+      r.lia = { x: r.x + 9, y: r.y + 3, pose: "front", room: r };
+      r.liaSide = { x: r.x + 7, y: r.y + 3, pose: "front", room: r };
       for (const rx of [5, 7, 3, 9]) spot(r, r.spots, rx, 6, "visit");
       r.decor.push({ kind: "window", x: r.x + r.w - 5, w: 3 }, { kind: "poster", x: r.x + 4 });
       r.decor.push({ kind: "rug", x: r.x + 3, y: r.y + 5, w: 6, h: 2, c: "#3f5677" });
+    } else if (r.kind === "rh") {
+      // Rita atende atrás da mesa, de frente; candidatos sentam do outro lado
+      block(r.x + 3, r.y + 4, 4);
+      furniture.push({ z: (r.y + 5) * TILE, kind: "userdesk", x: r.x + 3, y: r.y + 4 });
+      r.staff = { x: r.x + 4.5, y: r.y + 3, pose: "front", room: r };
+      block(r.x, r.y + 3, 2);
+      furniture.push({ z: (r.y + 4) * TILE, kind: "shelf", x: r.x, y: r.y + 3, w: 2 });
+      block(r.x + r.w - 1, r.y + 3);
+      furniture.push({ z: (r.y + 4) * TILE, kind: "plant", x: r.x + r.w - 1, y: r.y + 3 });
+      for (const rx of [4, 6]) spot(r, r.spots, rx, 6, "visit");
+      r.decor.push({ kind: "poster", x: r.x + 3 }, { kind: "poster", x: r.x + 6 });
     } else if (r.kind === "copa") {
       const tw = r.w - 7;
       block(r.x + 2, r.y + 4, tw, 2);
@@ -111,9 +128,10 @@ function buildLayout(departments) {
   for (const x of [1, W - 2]) { block(x, hallY); furniture.push({ z: (hallY + 1) * TILE, kind: "plant", x, y: hallY }); }
   const me = rooms.find((r) => r.kind === "me");
   const board = { x: me.x + 1, y: hallY - 1, w: 4 };
+  const reception = me.lia;
   const hallSpots = [];
   for (let x = 4; x < W - 4; x += 5) hallSpots.push({ x, y: hallY + 2, pose: "stand" });
-  return { W, H, grid, rooms, entrance, furniture, board, hallY, hallSpots };
+  return { W, H, grid, rooms, entrance, furniture, board, hallY, hallSpots, reception };
 }
 
 function bfs(L, from, to) {
@@ -218,6 +236,12 @@ export class Office {
     const deptRoom = (type) => this.depts.get(type) || this.depts.get("general-purpose") || this.room("dir");
     for (const d of data.departments)
       wanted.set("res:" + d.type, { label: d.funcionario, sub: d.nome, home: deptRoom(d.type), shirt: d.cor, mode: "idle", type: d.type, resident: true });
+    wanted.set("res:rh", { label: "Rita (RH)", sub: "RH", home: this.room("rh"), shirt: "#e07bb0", mode: "staff",
+                           staffSpot: this.room("rh").staff, staff: true, style: "coque" });
+    const lia = this.secretaryMsg;
+    wanted.set("res:secretaria", { label: "Lia", sub: "secretária", home: this.room("me"), shirt: "#2fb3c6",
+                                   mode: lia ? "deliver" : "staff", staffSpot: this.L.reception, staff: true, style: "comprido",
+                                   urgent: !!lia?.urgente });
     if (!data.sessions.length)
       wanted.set("res:claude", { label: "Claude", sub: "sem sessão aberta", home: this.room("dir"), shirt: MAIN_SHIRT, cap: CAP, mode: "idle", main: true });
     for (const s of data.sessions) {
@@ -238,7 +262,8 @@ export class Office {
       if (!c) {
         const start = info.resident || (info.main && !info.temp) ? this.randomCopaSeat() || this.L.entrance : this.L.entrance;
         c = { id, x: start.x, y: start.y, path: [], spot: null, seed: Math.random() * 6, nextMove: 0, facing: "front",
-              look: looks(id, info.shirt, { cap: info.cap, acc: ACC[info.type] }) };
+              look: looks(id, info.shirt, { cap: info.cap, acc: ACC[info.type], style: info.style }) };
+        if (info.staff) { c.x = info.staffSpot.x; c.y = info.staffSpot.y; }
         this.chars.set(id, c);
       }
       c.leaving = false;
@@ -265,6 +290,8 @@ export class Office {
       let want = c.spot;
       const room = c.spot?.room;
       if (c.mode === "leave") want = this.L.entrance;
+      else if (c.mode === "staff") want = c.staffSpot;
+      else if (c.mode === "deliver") want = this.room("me").liaSide;
       else if (c.mode === "work") {
         if (!(room === c.home && (c.spot.pose === "desk" || c.home.helpers.includes(c.spot))))
           want = c.home.seats.find((p) => !this.takenBy(p, c)) || c.home.helpers.find((p) => !this.takenBy(p, c)) || this.freeHall(c);
@@ -293,6 +320,11 @@ export class Office {
         else { c.x += (dx / d) * budget; c.y += (dy / d) * budget; budget = 0; }
       }
       if (c.leaving && !c.path.length) { this.chars.delete(c.id); continue; }
+      if (c.id === "res:secretaria" && c.mode === "deliver" && !c.path.length && c.spot === this.room("me").liaSide && !c.announced) {
+        c.announced = true;
+        this.handlers.onSecretaryArrived?.();
+      }
+      if (c.id === "res:secretaria" && c.mode !== "deliver") c.announced = false;
       if (c.mode === "idle" && now > c.nextMove) replan = true;
     }
     if (replan) this.plan();
@@ -306,6 +338,7 @@ export class Office {
     if (p === "backsit") return ["backsit", "back"];
     if (p === "sit") return ["sit", "front"];
     if (p === "visit") return ["stand", "back"];
+    if (p === "front") return ["stand", "front"];
     return ["stand", "front"];
   }
 
@@ -390,6 +423,7 @@ export class Office {
     else if (f.kind === "cooler") drawCooler(ctx, s, f.x, f.y, t);
     else if (f.kind === "sofa") drawSofa(ctx, s, f.x, f.y, f.w);
     else if (f.kind === "userdesk") drawUserDesk(ctx, s, f.x, f.y);
+    else if (f.kind === "reception") drawReception(ctx, s, f.x, f.y);
   }
 
   roomAt(x, y) {
@@ -461,7 +495,9 @@ export class Office {
       this.label(name, head.x, y, sel ? "rgba(255,209,102,.96)" : "rgba(18,14,32,.8)", sel ? "#1d1a2b" : c.main ? CAP : "#ece9f7", size);
     }
     let b = null;
-    if (c.leaving) b = "👋";
+    if (c.id === "res:secretaria" && c.mode === "deliver") b = c.urgent ? "❗" : "📋";
+    else if (c.staff) b = c.id === "res:rh" && Math.floor(t / 6 + c.seed) % 3 === 0 ? "🤝" : null;
+    else if (c.leaving) b = "👋";
     else if (c.path.length) b = null;
     else if (c.mode === "attention") b = Math.floor(t * 2) % 2 ? "❗" : "❓";
     else if (c.mode === "chat") b = "💬";
@@ -539,6 +575,7 @@ export class Office {
     if (best) return { char: best.id };
     const r = this.roomAt(Math.floor(w.x / TILE), Math.floor(w.y / TILE));
     if (r?.kind === "me") return { me: true };
+    if (r?.kind === "rh") return { char: "res:rh" };
     return null;
   }
 

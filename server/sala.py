@@ -14,6 +14,8 @@ from store import Store
 from chat import Chat
 import board
 import projects
+import hiring
+import teams
 
 store = Store()
 chat = Chat()
@@ -77,6 +79,8 @@ class Handler(SimpleHTTPRequestHandler):
         q = {k: v[0] for k, v in parse_qs(url.query).items()}
         if url.path == "/api/state":
             return self.json_out(store.snapshot(chat))
+        if url.path == "/api/agentes":
+            return self.json_out(hiring.agents())
         if url.path == "/api/projetos":
             return self.json_out(projects.projects())
         if url.path == "/api/chat":
@@ -117,6 +121,12 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/permissao":
             ok = chat.answer_permission(str(data.get("request_id", "")), data.get("behavior") == "allow")
             return self.json_out({"ok": ok}, 200 if ok else 404)
+        if path == "/api/equipe/nova":
+            ok, msg = teams.new_team(data.get("dir"), data.get("titulo"))
+            return self.json_out({"ok": ok, "msg": msg}, 200 if ok else 400)
+        if path in ("/api/contratar", "/api/demitir"):
+            ok, msg = hiring.hire(data) if path == "/api/contratar" else hiring.fire(data.get("id"))
+            return self.json_out({"ok": ok, "msg": msg}, 200 if ok else 400)
         if path == "/api/recado/apagar":
             return self.json_out({"ok": board.remove_note(str(data.get("id", "")))})
         return self.json_out({"erro": "rota"}, 404)

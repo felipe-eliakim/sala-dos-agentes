@@ -3,6 +3,8 @@
 import { Office } from "./office.js";
 import { toolInfo, STATE_TEXT } from "./tools.js";
 import { drawPerson, looks } from "./people.js";
+import { Secretary } from "./secretary.js";
+import { openHire } from "./hire.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -16,7 +18,12 @@ let selected = null;
 
 const office = new Office($("#office"), {
   onBoard: openBoard,
-  onSelect: (id) => { selected = id; showTab("team"); renderTeam(); renderFicha(); },
+  onSelect: (id) => {
+    if (id === "res:rh") return openHire(() => poll(true));
+    if (id === "res:secretaria") return $("#lia").scrollIntoView({ block: "nearest" });
+    selected = id; showTab("team"); renderTeam(); renderFicha();
+  },
+  onSecretaryArrived: () => showLia(),
   onMe: () => { showTab("chat"); $("#chat-input").focus(); },
   onLayout: renderRoomsNav,
 });
@@ -171,22 +178,93 @@ function md(text) {
   }).join("");
 }
 
+// ---------- equipes: uma aba por sessão ----------
+
+const SEEN_KEY = "sala-vistos";
+let seen = {};
+try { seen = JSON.parse(localStorage.getItem(SEEN_KEY)) || {}; } catch { /* sem armazenamento */ }
+const saveSeen = () => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch { /* tudo bem */ } };
+let pendingTeam = null;        // equipe recém-aberta: {dir, texto, known, t}
+
+function teamLabel(s, sessions) {
+  const same = sessions.filter((x) => x.projeto === s.projeto).length > 1;
+  return (s.projeto || "Hub") + (same ? ` · ${s.name}` : "");
+}
+
 function renderChatSessions() {
-  const sel = $("#chat-session");
-  const sessions = data.sessions;
+  const sessions = [...data.sessions].sort((a, b) => (b.canal - a.canal) || a.started - b.started);
   if (!chatSid || !sessions.some((s) => s.id === chatSid)) chatSid = (sessions.find((s) => s.canal) || sessions[0])?.id || null;
-  const html = sessions.map((s) => `<option value="${esc(s.id)}"${s.id === chatSid ? " selected" : ""}>${s.canal ? "● " : "○ "}${esc(s.projeto || "Claude")} · ${esc(s.name)}</option>`).join("");
-  if (sel.dataset.html !== html) { sel.innerHTML = html || "<option>nenhuma sessão aberta</option>"; sel.dataset.html = html; }
+  const html = sessions.map((s) => {
+    const unread = s.id !== chatSid && s.ultima_resposta > (seen[s.id] || 0);
+    const st = s.state === "working" ? "ocupada" : s.state === "attention" ? "precisa de você" : "livre";
+    return `<button type="button" role="tab" data-team="${esc(s.id)}" aria-selected="${s.id === chatSid}" class="${s.canal ? "" : "off"}"
+      title="${esc(s.name)} · ${st}${s.canal ? "" : " · não ligada à sala"}"><span class="d ${esc(s.state)}"></span>${esc(teamLabel(s, sessions))}${unread ? '<span class="n">nova</span>' : ""}</button>`;
+  }).join("");
+  const tabs = $("#team-tabs");
+  if (tabs.dataset.html !== html) { tabs.innerHTML = html || '<span class="area">Nenhuma equipe aberta.</span>'; tabs.dataset.html = html; }
   const cur = sessions.find((s) => s.id === chatSid);
   const on = !!cur?.canal;
   $("#chat-off").hidden = on;
   $("#chat-off").innerHTML = cur
-    ? "Esta sessão não está ligada à sala. Pra conversar por aqui, abra o Claude no terminal com <code>claude-sala</code> (na pasta do projeto) e ela aparece com ● nesta lista."
-    : "Nenhuma sessão do Claude aberta. Abra uma com <code>claude-sala</code> no terminal.";
+    ? `A equipe <b>${esc(teamLabel(cur, sessions))}</b> foi aberta no terminal sem o canal da sala. Dá pra continuar por lá, ou abrir uma equipe ligada à sala nessa mesma pasta.<br><button type="button" data-open-team="${esc(cur.dir ?? "")}">Abrir equipe ligada à sala aqui</button>`
+    : `Nenhuma equipe aberta. Use <b>+ Nova equipe</b> pra abrir uma num projeto.`;
   $("#chat-input").disabled = $("#chat-form button").disabled = !on;
+  $("#chat-input").placeholder = on ? `Escreva pra equipe ${teamLabel(cur, sessions)}… (Enter envia, Shift+Enter quebra linha)` : "Escolha uma equipe ligada à sala";
 }
 
-$("#chat-session").addEventListener("change", (e) => { chatSid = e.target.value; chatMsgs = []; renderChatSessions(); loadChat(); });
+function selectTeam(sid) {
+  chatSid = sid; chatMsgs = [];
+  $("#chat-log").innerHTML = "";
+  renderChatSessions(); loadChat();
+}
+
+$("#team-tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-team]");
+  if (b) selectTeam(b.dataset.team);
+});
+$("#chat-off").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-open-team]");
+  if (b) openNewTeam(b.dataset.openTeam);
+});
+
+async function openNewTeam(dir) {
+  const f = $("#new-team-form");
+  if (!liaProjects.length) await loadLiaProjects(false);
+  const cur = data?.sessions.find((s) => s.id === chatSid);
+  const want = dir ?? cur?.dir ?? "";
+  f.elements.dir.innerHTML = `<option value="">Hub (pasta de projetos)</option>` +
+    liaProjects.map((p) => `<option value="${esc(p.dir)}">${esc(p.nome)}</option>`).join("");
+  f.elements.dir.value = want;
+  f.hidden = false;
+  f.elements.texto.focus();
+}
+$("#new-team").addEventListener("click", () => ($("#new-team-form").hidden ? openNewTeam() : ($("#new-team-form").hidden = true)));
+$("#nt-cancel").addEventListener("click", () => { $("#new-team-form").hidden = true; });
+$("#new-team-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = e.currentTarget, dir = f.elements.dir.value, texto = f.elements.texto.value.trim();
+  const nome = f.elements.dir.selectedOptions[0]?.textContent || "Hub";
+  const r = await (await POST("/api/equipe/nova", { dir, titulo: nome })).json();
+  lia.say(r.ok ? `${r.msg}${texto ? " Assim que ela chegar, eu entrego o seu primeiro pedido." : ""}` : r.msg, null, !r.ok);
+  if (r.ok) {
+    pendingTeam = { dir, texto, known: new Set(data.sessions.map((s) => s.id)), t: Date.now() };
+    f.reset(); f.hidden = true;
+  }
+  liaTick(); showLia();
+});
+
+// Equipe nova chegou (ligada à sala, na pasta pedida): troca pra ela e entrega o primeiro pedido.
+async function checkPendingTeam() {
+  if (!pendingTeam) return;
+  if (Date.now() - pendingTeam.t > 10 * 60 * 1000) { pendingTeam = null; return; }
+  const s = data.sessions.find((x) => x.canal && !pendingTeam.known.has(x.id) && (x.dir ?? "") === pendingTeam.dir);
+  if (!s) return;
+  const { texto } = pendingTeam;
+  pendingTeam = null;
+  showTab("chat"); selectTeam(s.id);
+  if (texto) await POST("/api/chat", { sid: s.id, text: texto });
+  lia.say(`A equipe **${s.projeto || "Hub"}** chegou${texto ? " e já recebeu o seu primeiro pedido" : ""}.`, { rotulo: "Abrir conversa", tipo: "chat", sid: s.id });
+}
 
 async function loadChat() {
   if (!chatSid) { $("#chat-log").innerHTML = ""; return; }
@@ -195,6 +273,8 @@ async function loadChat() {
     const changed = JSON.stringify(msgs) !== JSON.stringify(chatMsgs);
     for (const m of msgs) if (m.de === "claude" && !chatMsgs.some((x) => x.id === m.id) && chatMsgs.length) chatActivity[chatSid] = m.t;
     chatMsgs = msgs;
+    const lastClaude = msgs.filter((m) => m.de === "claude" || m.perm).at(-1)?.t || 0;
+    if (lastClaude > (seen[chatSid] || 0)) { seen[chatSid] = lastClaude; saveSeen(); }
     if (changed) renderChat();
   } catch { /* servidor fora: o aviso geral já mostra */ }
 }
@@ -342,6 +422,114 @@ $("#projects").addEventListener("click", (e) => {
   setFollow(true);
 });
 
+// ---------- secretária ----------
+
+const lia = new Secretary();
+let liaProjects = [], liaReady = false, liaTimer = null;
+
+async function loadLiaProjects(again = true) {
+  try { liaProjects = await (await fetch("/api/projetos", { cache: "no-store" })).json(); } catch { /* sem projetos: tudo bem */ }
+  liaReady = true;
+  if (again) setTimeout(loadLiaProjects, 5 * 60 * 1000);
+}
+loadLiaProjects();
+
+function md1(t) { return esc(t).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>"); }
+
+function beep() {
+  try {
+    const a = new AudioContext(), o = a.createOscillator(), g = a.createGain();
+    o.frequency.value = 880; o.connect(g); g.connect(a.destination);
+    g.gain.setValueAtTime(0.08, a.currentTime); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.35);
+    o.start(); o.stop(a.currentTime + 0.35);
+  } catch { /* navegador sem áudio */ }
+}
+
+function liaTick() {
+  if (!data || !liaReady) return;
+  lia.observe(data, liaProjects);
+  if (!lia.current) {
+    const m = lia.take();
+    if (m) {
+      office.secretaryMsg = m;
+      if (m.urgente && lia.settings.som) beep();
+      if (m.urgente && lia.settings.notificar && document.hidden && "Notification" in window && Notification.permission === "granted")
+        new Notification("Lia, sua secretária", { body: m.texto.replace(/\*\*/g, "") });
+      clearTimeout(liaTimer);
+      liaTimer = setTimeout(() => showLia(), 1500);    // o painel dela mostra na hora; no escritório ela anda até você
+    }
+  }
+}
+
+function teamsSummary() {
+  if (!data) return "";
+  const s = data.sessions;
+  if (!s.length) return "Nenhuma equipe aberta agora. Quer abrir uma? É só clicar em <b>+ Nova equipe</b>.";
+  const parts = s.map((x) => `<b>${esc(x.projeto || "Hub")}</b> ${x.state === "working" ? "ocupada" : x.state === "attention" ? "precisando de você" : "livre"}`);
+  return `Tudo sob controle. Equipes: ${parts.join(", ")}.`;
+}
+
+function showLia() {
+  clearTimeout(liaTimer);
+  const m = lia.current;
+  const box = $("#lia");
+  box.classList.toggle("tem", !!m);
+  box.classList.toggle("urgente", !!m?.urgente);
+  const text = m ? md1(m.texto) : teamsSummary();
+  if ($("#lia-text").dataset.t !== text) { $("#lia-text").innerHTML = text; $("#lia-text").dataset.t = text; }
+  const acts = m
+    ? (m.acao ? `<button type="button" class="main" data-lia="acao">${esc(m.acao.rotulo)}</button>` : "") +
+      `<button type="button" data-lia="ok">Ok, obrigado</button>` + (m.urgente || m.info ? "" : `<button type="button" data-lia="depois">Me lembre depois</button>`)
+    : `<button type="button" data-lia="nova">+ Nova equipe</button><button type="button" data-lia="quadro">📌 Quadro</button><button type="button" data-lia="rh">🤝 Contratar</button>`;
+  if ($("#lia-actions").dataset.h !== acts) { $("#lia-actions").innerHTML = acts; $("#lia-actions").dataset.h = acts; }
+  const cv = box.querySelector("canvas"), ctx = cv.getContext("2d");
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  drawPerson(ctx, 5.2, 4.6, 15.3, office.chars.get("res:secretaria")?.look || looks("res:secretaria", "#2fb3c6", { style: "comprido" }),
+    "front", "stand", performance.now() / 1000, { seed: 1, raise: !!m?.urgente });
+  const f = $("#lia-settings");
+  if (f.hidden) {
+    f.elements.lembretesMin.value = String(lia.settings.lembretesMin);
+    f.elements.som.checked = lia.settings.som;
+    f.elements.notificar.checked = lia.settings.notificar;
+  }
+}
+setInterval(showLia, 300);       // retrato animado e resumo sempre em dia
+
+function closeLia(later) {
+  const m = lia.current;
+  if (m) lia.done(later);
+  office.secretaryMsg = null;
+  return m;
+}
+
+$("#lia-actions").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-lia]"); if (!b) return;
+  const what = b.dataset.lia;
+  if (what === "nova") { showTab("chat"); return openNewTeam(); }
+  if (what === "quadro") return openBoard();
+  if (what === "rh") return openHire(() => poll(true));
+  const m = closeLia(what === "depois");
+  if (what === "acao" && m?.acao) {
+    const a = m.acao;
+    if (a.tipo === "chat") { showTab("chat"); if (a.sid) selectTeam(a.sid); }
+    else if (a.tipo === "projetos") showTab("proj");
+    else if (a.tipo === "quadro") openBoard();
+  }
+});
+$("#lia-cfg").addEventListener("click", () => { $("#lia-settings").hidden = !$("#lia-settings").hidden; });
+$("#lia-settings").addEventListener("change", async (e) => {
+  const f = e.currentTarget;
+  lia.settings.lembretesMin = +f.elements.lembretesMin.value;
+  lia.settings.som = f.elements.som.checked;
+  lia.settings.notificar = f.elements.notificar.checked;
+  if (lia.settings.notificar && "Notification" in window && Notification.permission === "default") {
+    if (await Notification.requestPermission() !== "granted") { lia.settings.notificar = false; f.elements.notificar.checked = false; }
+  }
+  lia.save();
+});
+
+$("#open-hire").addEventListener("click", () => openHire(() => poll(true)));
+
 // ---------- abas ----------
 
 function showTab(name) {
@@ -370,6 +558,8 @@ async function poll(once) {
     office.boardPapers = office.boardCount + data.board.hub.length + data.board.concluidas.length;
     $("#board-count").textContent = office.boardCount;
     $("#board-count").hidden = !office.boardCount;
+    liaTick();
+    await checkPendingTeam();
     office.sync(data, chatActivity);
     updateRoomsBusy();
     if ($("#follow").getAttribute("aria-pressed") === "true" && !office.camera.follow) setFollow(false);

@@ -257,3 +257,15 @@ export function drawCooler(ctx, s, x, y, t) {
   rect(ctx, s, X + 2.5, Y - 9 + ((t * 0.5) % 1) * 4, 1, 1, "rgba(255,255,255,.8)");
   rect(ctx, s, X + 3.5, Y - 1, 1, 1, "#5a8ed6");
 }
+
+export function drawReception(ctx, s, x, y) {
+  // balcão da recepção, de frente pro corredor
+  const X = x * TILE, Y = y * TILE;
+  box(ctx, s, X, Y, 3 * TILE, 8, "#2fb3c6");
+  rect(ctx, s, X, Y, 3 * TILE, 2, "#7fd6e2");
+  rect(ctx, s, X + 2, Y + 4, 3 * TILE - 4, 0.5, "#1f8a99");
+  box(ctx, s, X + 3, Y - 4, 7, 4.5, "#3a3f52");                 // monitor visto de trás
+  box(ctx, s, X + 14, Y - 1.5, 5, 2, "#f4efe2");                // agenda
+  rect(ctx, s, X + 14.5, Y - 1, 4, 0.4, "#d65a5a");
+  box(ctx, s, X + 20.5, Y - 3, 1.5, 3, "#e2b84a");               // canetas
+}
