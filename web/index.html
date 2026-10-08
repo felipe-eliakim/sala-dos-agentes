@@ -22,14 +22,24 @@
 
   <div class="layout">
     <section class="office-wrap" aria-label="Escritório">
-      <canvas id="office" role="img" aria-label="Escritório com os agentes"></canvas>
-      <p class="hint">Clique num agente pra ver o que ele está fazendo, no quadro de avisos do corredor pra abrir, ou na sua sala pra conversar.</p>
+      <nav class="rooms-nav" id="rooms-nav" aria-label="Ir para a sala"></nav>
+      <div class="stage">
+        <canvas id="office" tabindex="0" role="img" aria-label="Escritório com os agentes. Arraste pra mover, roda do mouse ou pinça pra zoom, setas e +/− pelo teclado."></canvas>
+        <div class="zoom" role="group" aria-label="Zoom">
+          <button type="button" id="zoom-in" title="Aproximar (+)" aria-label="Aproximar">+</button>
+          <button type="button" id="zoom-out" title="Afastar (−)" aria-label="Afastar">−</button>
+          <button type="button" id="zoom-fit" title="Ver tudo (0)" aria-label="Ver tudo">⤢</button>
+          <button type="button" id="follow" title="Seguir o agente selecionado" aria-label="Seguir o agente selecionado" aria-pressed="false">🎯</button>
+        </div>
+      </div>
+      <p class="hint">Arraste pra mover · roda do mouse ou pinça pra zoom · clique num agente pra ver o que faz, no quadro de avisos do corredor pra abrir, ou na sua sala pra conversar.</p>
     </section>
 
     <aside class="side">
       <div class="tabs" role="tablist">
         <button role="tab" id="tab-chat" aria-selected="true" aria-controls="panel-chat">💬 Sua sala</button>
         <button role="tab" id="tab-team" aria-selected="false" aria-controls="panel-team">👥 Equipe</button>
+        <button role="tab" id="tab-proj" aria-selected="false" aria-controls="panel-proj">📁 Projetos</button>
       </div>
 
       <section id="panel-chat" class="panel" role="tabpanel" aria-labelledby="tab-chat">
@@ -45,7 +55,13 @@
       </section>
 
       <section id="panel-team" class="panel" role="tabpanel" aria-labelledby="tab-team" hidden>
+        <div id="ficha" class="ficha" hidden></div>
         <ul id="team" class="team"></ul>
+      </section>
+
+      <section id="panel-proj" class="panel" role="tabpanel" aria-labelledby="tab-proj" hidden>
+        <div class="proj-filters" id="proj-filters" role="group" aria-label="Filtrar projetos"></div>
+        <ul id="projects" class="projects"></ul>
       </section>
     </aside>
   </div>

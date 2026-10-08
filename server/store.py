@@ -90,6 +90,7 @@ class Store:
                 del self.sessions[sid]
             for s in visible:
                 s["projeto"] = state.project_label(s["cwd"], self.hub_dir, self.labels)
+                s["dir"] = state.project_of(s["cwd"], self.hub_dir)
             feed = [dict(f, projeto=state.project_label(f["cwd"], self.hub_dir, self.labels))
                     for f in reversed(self.feed) if f["t"] >= old]
         online = chat.online(now) if chat else set()

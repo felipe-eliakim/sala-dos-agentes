@@ -1,9 +1,21 @@
 {
-  "_comentario": "Departamentos dos agentes embutidos do Claude Code. Agentes criados em ~/.claude/agents entram sozinhos com o próprio nome; para dar nome e cor, use ~/.config/sala-dos-agentes/departamentos.json (mesmo formato).",
-  "Explore":           {"nome": "Pesquisa",            "cor": "#3fae6a", "funcionario": "Explore"},
-  "Plan":              {"nome": "Planejamento",        "cor": "#8a5cd6", "funcionario": "Plan"},
-  "general-purpose":   {"nome": "Operações",           "cor": "#3b82f6", "funcionario": "Geral"},
-  "claude":            {"nome": "Plantão",             "cor": "#d9822b", "funcionario": "Coringa"},
-  "claude-code-guide": {"nome": "Suporte Claude Code", "cor": "#e2a33a", "funcionario": "Guia"},
-  "statusline-setup":  {"nome": "Configuração",        "cor": "#7a8699", "funcionario": "Configura"}
+  "_comentario": "Departamentos dos agentes embutidos do Claude Code. Agentes criados em ~/.claude/agents entram sozinhos (a descrição vem do próprio arquivo); para dar nome, cor e textos, use ~/.config/sala-dos-agentes/departamentos.json (mesmo formato).",
+  "Explore": {"nome": "Pesquisa", "cor": "#3fae6a", "funcionario": "Explore",
+    "descricao": "Pesquisador rápido. Varre muitos arquivos e pastas pra achar onde algo está e volta só com a conclusão. Só lê: não edita nada.",
+    "quando": "Quando a sessão precisa procurar em muitos lugares antes de agir (\"onde é feito o login?\", \"quem usa essa função?\")."},
+  "Plan": {"nome": "Planejamento", "cor": "#8a5cd6", "funcionario": "Plan",
+    "descricao": "Arquiteto. Estuda o código e devolve um plano de implementação passo a passo, com arquivos críticos e prós e contras. Só lê: não edita nada.",
+    "quando": "Antes de uma mudança grande ou no modo de planejamento, pra decidir o caminho antes de escrever código."},
+  "general-purpose": {"nome": "Operações", "cor": "#3b82f6", "funcionario": "Geral",
+    "descricao": "Faz-tudo. Pesquisa, lê, edita e roda comandos numa tarefa de vários passos, com as mesmas ferramentas da sessão.",
+    "quando": "Quando a sessão quer delegar um pedaço inteiro do trabalho (ou rodar várias frentes ao mesmo tempo) sem encher a própria conversa."},
+  "claude": {"nome": "Plantão", "cor": "#d9822b", "funcionario": "Coringa",
+    "descricao": "Agente genérico de plantão, com todas as ferramentas. Cobre o que não se encaixa em nenhum outro departamento.",
+    "quando": "Quando nenhum agente mais específico serve para a tarefa."},
+  "claude-code-guide": {"nome": "Suporte Claude Code", "cor": "#e2a33a", "funcionario": "Guia",
+    "descricao": "Especialista no próprio Claude Code, no Agent SDK e na API da Anthropic. Consulta a documentação oficial.",
+    "quando": "Quando surge uma dúvida do tipo \"o Claude Code consegue...?\", \"como configuro hooks?\", \"como uso a API?\"."},
+  "statusline-setup": {"nome": "Configuração", "cor": "#7a8699", "funcionario": "Configura",
+    "descricao": "Configura a linha de status do terminal do Claude Code (a barrinha de informações embaixo).",
+    "quando": "Só quando você pede pra mudar a linha de status."}
 }

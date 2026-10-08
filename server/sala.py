@@ -13,6 +13,7 @@ from config import HOST, PORT, WEB_DIR, DATA_DIR
 from store import Store
 from chat import Chat
 import board
+import projects
 
 store = Store()
 chat = Chat()
@@ -76,6 +77,8 @@ class Handler(SimpleHTTPRequestHandler):
         q = {k: v[0] for k, v in parse_qs(url.query).items()}
         if url.path == "/api/state":
             return self.json_out(store.snapshot(chat))
+        if url.path == "/api/projetos":
+            return self.json_out(projects.projects())
         if url.path == "/api/chat":
             return self.json_out(chat.messages(q.get("sid", "")))
         if url.path == "/api/canal/inbox":

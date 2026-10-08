@@ -7,7 +7,8 @@ Escritório local em pixel art com a equipe de agentes do Claude Code e uma sala
 - Canal (`channel/sala_channel.py`): MCP stdio escrito à mão (JSON-RPC por linha). Testar sem abrir o Claude: rodar o canal como processo filho e simular o host. Rotas `/api/canal/*` exigem o token; rotas da página exigem Origin/Host/X-Sala: não afrouxar.
 - Lógica de estado fica em `server/state.py` (funções puras) com teste em `tests/test_state.py`: `python3 -m unittest discover tests`.
 - Depois de mudar o servidor: `systemctl --user restart sala-dos-agentes`. A página não precisa de restart (sem cache).
-- Testar visual com a demonstração (`ops/demo.py`, porta 8778). Na aba da extensão Claude em Chrome a animação é lenta; adiantar pelo console chamando `window.salaOffice.update(0.1, t)` em laço.
+- Testar visual com a demonstração (`ops/demo.py`, porta 8778). Na aba da extensão Claude em Chrome a animação é lenta; adiantar pelo console chamando `window.salaOffice.update(0.1, t)` em laço; `salaOffice.goToRoom("copa")` ou `salaOffice.camera.goTo({x,y,w,h}, false)` pra enquadrar.
+- Desenho: tudo em pixels do mundo (tile = 8) multiplicados por `R = 4` na imagem do mundo; frações de 0,25 px são nítidas. Hash de aparência usa `>>>` (com `>>` o índice fica negativo).
 - Teste com Claude real num pseudo-terminal: limpar do ambiente as variáveis `CLAUDE*` herdadas desta sessão, senão a sessão filha não se registra em `~/.claude/sessions`.
 - Cuidado com `pkill -f`/`pgrep -f` + `kill`: se o padrão aparece em qualquer parte do comando (inclusive num heredoc), mata o shell da sessão. Matar por PID obtido de `ss -ltnp` ou de `systemctl`.
 - Repositório público: nada pessoal no git. Nome, pasta de projetos, nomes de projetos e departamentos extras ficam em `~/.config/sala-dos-agentes/` (modelo em `exemplos/`); `channel/mcp.json` e o `.service` são gerados por `ops/install.py`. Antes de commitar, procurar nomes, caminhos `/home/...` e e-mails no diff.
