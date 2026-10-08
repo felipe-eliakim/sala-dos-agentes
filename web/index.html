@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sala dos Agentes</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%233d3560'/><rect x='5' y='3' width='6' height='5' fill='%23f2c9a0'/><rect x='5' y='2' width='6' height='2' fill='%23ffd166'/><rect x='4' y='8' width='8' height='5' fill='%23e0694a'/></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="eyebrow">claude code · escritório local</p>
+      <h1>Sala dos Agentes</h1>
+    </div>
+    <div class="top-right">
+      <div id="summary" class="summary" aria-live="polite"></div>
+      <button id="open-board" class="board-btn" type="button">📌 Quadro de avisos <span id="board-count" class="badge" hidden></span></button>
+    </div>
+  </header>
+  <p id="notice" class="notice" hidden></p>
+
+  <div class="layout">
+    <section class="office-wrap" aria-label="Escritório">
+      <canvas id="office" role="img" aria-label="Escritório com os agentes"></canvas>
+      <p class="hint">Clique num agente pra ver o que ele está fazendo, no quadro de avisos do corredor pra abrir, ou na sua sala pra conversar.</p>
+    </section>
+
+    <aside class="side">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-chat" aria-selected="true" aria-controls="panel-chat">💬 Sua sala</button>
+        <button role="tab" id="tab-team" aria-selected="false" aria-controls="panel-team">👥 Equipe</button>
+      </div>
+
+      <section id="panel-chat" class="panel" role="tabpanel" aria-labelledby="tab-chat">
+        <label class="field">Falar com
+          <select id="chat-session"></select>
+        </label>
+        <div id="chat-off" class="chat-off" hidden></div>
+        <ol id="chat-log" class="chat-log" aria-live="polite"></ol>
+        <form id="chat-form" class="chat-form">
+          <textarea id="chat-input" rows="2" placeholder="Escreva pro Claude… (Enter envia, Shift+Enter quebra linha)" aria-label="Mensagem"></textarea>
+          <button type="submit">Enviar</button>
+        </form>
+      </section>
+
+      <section id="panel-team" class="panel" role="tabpanel" aria-labelledby="tab-team" hidden>
+        <ul id="team" class="team"></ul>
+      </section>
+    </aside>
+  </div>
+
+  <dialog id="board" class="board">
+    <header><h2>📌 Quadro de avisos</h2><button type="button" id="close-board" aria-label="Fechar">✕</button></header>
+    <div id="board-body" class="board-body"></div>
+  </dialog>
+
+  <footer class="legend">
+    <span>boné amarelo = Claude (sessão principal)</span>
+    <span>📖 lendo</span><span>✏️ escrevendo</span><span>⌨️ terminal</span><span>🌐 pesquisando</span>
+    <span>📋 delegando</span><span>❗ precisa de você</span><span>💬 conversando</span><span>🥪 ☕ na copa (livre)</span>
+  </footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

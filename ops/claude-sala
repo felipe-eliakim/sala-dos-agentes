@@ -1,0 +1,8 @@
+#!/bin/sh
+# Abre o Claude Code ligado à Sala dos Agentes: o que você digitar na sua sala
+# (http://127.0.0.1:8777) chega nesta sessão, e as respostas e pedidos de
+# permissão aparecem lá. Aceita os mesmos argumentos do claude.
+DIR="$(dirname "$(readlink -f "$0")")/.."
+# reply/recado liberados: sem isso cada resposta pediria permissão.
+exec claude --mcp-config "$DIR/channel/mcp.json" --dangerously-load-development-channels server:sala \
+  --allowedTools mcp__sala__reply mcp__sala__recado "$@"

@@ -1,0 +1,9 @@
+{
+  "_comentario": "Departamentos dos agentes embutidos do Claude Code. Agentes criados em ~/.claude/agents entram sozinhos com o próprio nome; para dar nome e cor, use ~/.config/sala-dos-agentes/departamentos.json (mesmo formato).",
+  "Explore":           {"nome": "Pesquisa",            "cor": "#3fae6a", "funcionario": "Explore"},
+  "Plan":              {"nome": "Planejamento",        "cor": "#8a5cd6", "funcionario": "Plan"},
+  "general-purpose":   {"nome": "Operações",           "cor": "#3b82f6", "funcionario": "Geral"},
+  "claude":            {"nome": "Plantão",             "cor": "#d9822b", "funcionario": "Coringa"},
+  "claude-code-guide": {"nome": "Suporte Claude Code", "cor": "#e2a33a", "funcionario": "Guia"},
+  "statusline-setup":  {"nome": "Configuração",        "cor": "#7a8699", "funcionario": "Configura"}
+}

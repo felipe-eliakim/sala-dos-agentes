@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+# gerados por ops/install.py com os caminhos desta máquina
+channel/mcp.json
+ops/sala-dos-agentes.service
